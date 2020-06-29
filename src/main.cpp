@@ -25,13 +25,35 @@ bool switchedLastIteration = true;
 Motor::DCMotor motorL(PB_1, PB_0);
 Motor::DCMotor motorR(PA_1, PA_0);
 
-void setup() {
+void setupDisplay() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
   display.display();
+}
+
+void printPDParameters(bool running, unsigned int error, unsigned int kp,
+                       unsigned int kd, unsigned int gain) {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+
+  if (running) {
+    display.println("Motor on");
+  } else {
+    display.println("Motor off");
+  }
+  display.printf("Error: %d\n\n\n\n", error);
+
+  display.println("P    D    G");
+  display.printf("%-4d %-4d %-4d", kp, kd, gain);
+
+  display.display();
+}
+
+void setup() {
+  setupDisplay();
 
   pinMode(P_PIN, INPUT);
   pinMode(GAIN_PIN, INPUT);
@@ -75,30 +97,12 @@ void loop() {
     motorL.setSpeed(0);
     motorR.setSpeed(0);
 
-    display.clearDisplay();
-    display.setCursor(0, 0);
-
-    display.println("Motor off");
-    display.printf("Set point: %d\n", sp);
-    display.printf("Error: %d\n\n\n\n", error);
-
-    display.println("P    D    G");
-    display.printf("%-4d %-4d %-4d", kp, kd, gain);
-
-    display.display();
+    printPDParameters(true, error, kp, kd, gain);
   } else {
     if (switchedLastIteration) {
       switchedLastIteration = false;
 
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("Motor on");
-      display.printf("Set point: %d\n\n\n\n\n", sp);
-
-      display.println("P    D    G");
-      display.printf("%-4d %-4d %-4d", kp, kd, gain);
-
-      display.display();
+      printPDParameters(false, error, kp, kd, gain);
     }
 
     int p = kp * error;
