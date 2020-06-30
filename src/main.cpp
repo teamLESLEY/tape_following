@@ -11,8 +11,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define D_PIN PA3
 #define GAIN_PIN PA2
 int lastError = 0;
-unsigned long lastPositionStartTime = 0; // us
-unsigned long currentPositionStartTime = 0; // us
+unsigned long lastPositionStartTime = 0; // ms
+unsigned long currentPositionStartTime = 0; // ms
 
 #define PRINT_PIN PB14
 bool printSwitchedLastLoop = true;
@@ -101,12 +101,12 @@ void loop() {
   int error = tapeSensorError(tapeLeft, tapeRight, lastError);
 
   // Calculate derivative
-  unsigned long now = micros();
+  unsigned long now = millis();
   if (error != lastError) {
     lastPositionStartTime = currentPositionStartTime;
-    curreontPositionStartTime = now;
+    currentPositionStartTime = now;
   }
-  int derivative = (error - lastError) / (now - lastPositionStartTime);
+  double derivative = (error - lastError) / (now - lastPositionStartTime);
 
   if (!digitalRead(PRINT_PIN)) {
     printSwitchedLastLoop = true;
@@ -115,7 +115,7 @@ void loop() {
 
     printPDParameters(false, error, kp, kd, gain);
   } else {
-    if (switchedLastIteration) {
+    if (printSwitchedLastLoop) {
       printSwitchedLastLoop = false;
 
       printPDParameters(true, error, kp, kd, gain);
@@ -123,12 +123,12 @@ void loop() {
 
     int p = kp * error;
     int d = kd * derivative;
-    int correction = (gain / 2000.0) * (p + d);
+    double correction = gain / 100000.0 * (p + d);
 
-    int lSpeed = MOTOR_BASE_SPEED + correction;
-    int rSpeed = MOTOR_BASE_SPEED + correction;
-    motorL.setPWMOuput(constrain(abs(correction), 0, 1024));
-    motorR.setPWMOuput(constrain(abs(correction), 0, 1024));
+    double lSpeed = MOTOR_BASE_SPEED - correction;
+    double rSpeed = MOTOR_BASE_SPEED + correction;
+    motorL.setSpeed(constrain(lSpeed, -1, 1));
+    motorR.setSpeed(constrain(rSpeed, -1, 1));
   }
 
   lastError = error;

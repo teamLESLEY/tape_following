@@ -4,8 +4,8 @@
 
 using namespace Motor;
 
-DCMotor::DCMotor(PinName forwardPin, PinName reversePin)
-  : FORWARD_PIN(forwardPin), REVERSE_PIN(reversePin) {
+DCMotor::DCMotor(PinName forwardPin, PinName reversePin, unsigned int minPWMToMove)
+  : FORWARD_PIN(forwardPin), REVERSE_PIN(reversePin), MOVEMENT_MIN_PWM(minPWMToMove) {
   pwmOutput = 0;
   direction = Direction::Stop;
 
@@ -58,9 +58,17 @@ void DCMotor::switchDirection() {
 }
 
 void DCMotor::setSpeed(double speed) {
-  if (0 <= speed && speed <= 1) {
-    pwmOutput = speed * PWM_MAX;
-    updatePWM();
+  if (-1 <= speed && speed <= 1) {
+    if (speed == 0) {
+      direction = Direction::Stop;
+    } else if (speed > 0) {
+      direction = Direction::Forward;
+    } else {
+      direction = Direction::Reverse;
+      speed = -speed;
+    }
+
+    setPWMOutput(speed * PWM_MAX);
   }
 }
 
@@ -79,6 +87,9 @@ unsigned int DCMotor::getPWMOutput() {
 }
 
 void DCMotor::setPWMOutput(unsigned int dutyCycle) {
+  if (dutyCycle != 0) {
+    dutyCycle = map(dutyCycle, 0, 1024, MOVEMENT_MIN_PWM, 1024);
+  }
   if (dutyCycle <= PWM_MAX) {
     pwmOutput = dutyCycle;
     updatePWM();

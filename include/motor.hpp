@@ -13,13 +13,14 @@ namespace Motor {
     const PinName FORWARD_PIN;
     const PinName REVERSE_PIN;
     unsigned int pwmOutput;
+    const unsigned int MOVEMENT_MIN_PWM;
 
     Direction direction;
 
     void updatePWM();
 
   public:
-    DCMotor(PinName forwardPin, PinName reversePin);
+    DCMotor(PinName forwardPin, PinName reversePin, unsigned int minPWMToMove=0);
 
     double getSpeed();
     Direction getDirection();
