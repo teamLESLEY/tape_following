@@ -15,7 +15,6 @@ unsigned long lastPositionStartTime = 0; // ms
 unsigned long currentPositionStartTime = 0; // ms
 
 #define PRINT_PIN PB14
-bool printSwitchedLastLoop = true;
 
 #define TAPE_L PA7
 #define TAPE_R PA6
@@ -24,9 +23,11 @@ bool printSwitchedLastLoop = true;
 #define ERROR_ONE_OFF 2 // mm
 #define ERROR_BOTH_OFF 10 // mm
 
-Motor::DCMotor motorL(PB_1, PB_0);
-Motor::DCMotor motorR(PA_1, PA_0);
-#define MOTOR_BASE_SPEED 0
+Motor::DCMotor motorL(PB_1, PB_0, 900);
+Motor::DCMotor motorR(PA_1, PA_0, 900);
+#define MOTOR_BASE_SPEED 0.5
+
+unsigned int i = 0;
 
 void setupDisplay() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -37,7 +38,7 @@ void setupDisplay() {
   display.display();
 }
 
-void printPDParameters(bool running, unsigned int error, unsigned int kp,
+void printPDParameters(bool running, int error, unsigned int kp,
                        unsigned int kd, unsigned int gain) {
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -51,6 +52,19 @@ void printPDParameters(bool running, unsigned int error, unsigned int kp,
 
   display.println("P    D    G");
   display.printf("%-4d %-4d %-4d", kp, kd, gain);
+
+  display.display();
+}
+
+void printPDCorrection(int error, double p, double d, double correction) {
+  display.clearDisplay();
+  display.setCursor(0, 0);
+
+  display.println("Motor on");
+  display.printf("Error: %d\n\n\n\n", error);
+
+  display.println("P*100 D*100 Corr*100");
+  display.printf("%-5d %-5d %d", (int)(p * 100), (int)(d * 100), (int)(correction * 100));
 
   display.display();
 }
@@ -82,8 +96,8 @@ void setup() {
   setupDisplay();
 
   pinMode(P_PIN, INPUT);
-  pinMode(GAIN_PIN, INPUT);
   pinMode(D_PIN, INPUT);
+  pinMode(GAIN_PIN, INPUT);
   pinMode(PRINT_PIN, INPUT_PULLUP);
 
   pinMode(TAPE_L, INPUT);
@@ -108,28 +122,27 @@ void loop() {
   }
   double derivative = (error - lastError) / (now - lastPositionStartTime);
 
+  double p = kp / 1024.0 * error;
+  double d = kd / 100.0 * derivative;
+  double correction = gain / 1024.0 * (p + d);
+
+  double lSpeed = MOTOR_BASE_SPEED - correction;
+  double rSpeed = MOTOR_BASE_SPEED + correction;
+
   if (!digitalRead(PRINT_PIN)) {
-    printSwitchedLastLoop = true;
     motorL.setSpeed(0);
     motorR.setSpeed(0);
 
     printPDParameters(false, error, kp, kd, gain);
   } else {
-    if (printSwitchedLastLoop) {
-      printSwitchedLastLoop = false;
-
-      printPDParameters(true, error, kp, kd, gain);
+    if (i == 0) {
+      printPDCorrection(error, p, d, correction);
     }
 
-    int p = kp * error;
-    int d = kd * derivative;
-    double correction = gain / 100000.0 * (p + d);
-
-    double lSpeed = MOTOR_BASE_SPEED - correction;
-    double rSpeed = MOTOR_BASE_SPEED + correction;
     motorL.setSpeed(constrain(lSpeed, -1, 1));
     motorR.setSpeed(constrain(rSpeed, -1, 1));
   }
 
   lastError = error;
+  i = (i + 1) % 20;
 }
