@@ -1,6 +1,7 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include "motor.hpp"
+#include "tape.hpp"
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -16,10 +17,7 @@ unsigned long currentPositionStartTime = 0; // ms
 
 #define PRINT_PIN PB14
 
-#define TAPE_L PA7
-#define TAPE_R PA6
-#define TAPE_ON_MIN 150
-
+TapeSensor ts(PA7, PA6, 150);
 #define ERROR_ONE_OFF 2 // mm
 #define ERROR_BOTH_OFF 10 // mm
 
@@ -69,9 +67,9 @@ void printPDCorrection(int error, double p, double d, double correction) {
   display.display();
 }
 
-int tapeSensorError(unsigned int tapeLeftReading, unsigned int tapeRightReading, int lastError) {
-  bool tapeLeftOn = tapeLeftReading > TAPE_ON_MIN;
-  bool tapeRightOn = tapeRightReading > TAPE_ON_MIN;
+int tapeSensorError(TapeSensor ts, int lastError) {
+  bool tapeLeftOn = ts.isLeftOn();
+  bool tapeRightOn = ts.isRightOn();
 
   if (tapeLeftOn && tapeRightOn) {
     return 0;
@@ -99,9 +97,6 @@ void setup() {
   pinMode(D_PIN, INPUT);
   pinMode(GAIN_PIN, INPUT);
   pinMode(PRINT_PIN, INPUT_PULLUP);
-
-  pinMode(TAPE_L, INPUT);
-  pinMode(TAPE_R, INPUT);
 }
 
 void loop() {
@@ -109,10 +104,7 @@ void loop() {
   unsigned int kd = analogRead(D_PIN);
   unsigned int gain = analogRead(GAIN_PIN);
 
-  unsigned int tapeLeft = analogRead(TAPE_L);
-  unsigned int tapeRight = analogRead(TAPE_R);
-
-  int error = tapeSensorError(tapeLeft, tapeRight, lastError);
+  int error = tapeSensorError(ts, lastError);
 
   // Calculate derivative
   unsigned long now = millis();
