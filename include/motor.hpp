@@ -19,8 +19,14 @@ namespace Motor {
 
     void updatePWM();
 
+    // Common setup between constructors
+    void setup();
+
   public:
     DCMotor(PinName forwardPin, PinName reversePin, unsigned int minPWMToMove=0);
+    DCMotor(uint32_t forwardPin, uint32_t reversePin, unsigned int minPWMToMove=0);
+    DCMotor(PinName forwardPin, uint32_t reversePin, unsigned int minPWMToMove=0);
+    DCMotor(uint32_t forwardPin, PinName reversePin, unsigned int minPWMToMove=0);
 
     double getSpeed();
     Direction getDirection();

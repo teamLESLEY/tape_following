@@ -6,6 +6,28 @@ using namespace Motor;
 
 DCMotor::DCMotor(PinName forwardPin, PinName reversePin, unsigned int minPWMToMove)
   : FORWARD_PIN(forwardPin), REVERSE_PIN(reversePin), MOVEMENT_MIN_PWM(minPWMToMove) {
+  setup();
+}
+
+DCMotor::DCMotor(uint32_t forwardPin, uint32_t reversePin, unsigned int minPWMToMove)
+  : FORWARD_PIN(digitalPinToPinName(forwardPin)), REVERSE_PIN(digitalPinToPinName(reversePin)),
+    MOVEMENT_MIN_PWM(minPWMToMove) {
+  setup();
+}
+
+DCMotor::DCMotor(PinName forwardPin, uint32_t reversePin, unsigned int minPWMToMove)
+  : FORWARD_PIN(forwardPin), REVERSE_PIN(digitalPinToPinName(reversePin)),
+    MOVEMENT_MIN_PWM(minPWMToMove) {
+  setup();
+}
+
+DCMotor::DCMotor(uint32_t forwardPin, PinName reversePin, unsigned int minPWMToMove)
+  : FORWARD_PIN(digitalPinToPinName(forwardPin)), REVERSE_PIN(reversePin),
+    MOVEMENT_MIN_PWM(minPWMToMove) {
+  setup();
+}
+
+void DCMotor::setup() {
   pwmOutput = 0;
   direction = Direction::Stop;
 

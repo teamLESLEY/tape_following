@@ -8,7 +8,7 @@
 #define OLED_RESET -1
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define P_PIN PA4
+#define P_PIN PA5
 #define D_PIN PA3
 #define GAIN_PIN PA2
 int lastError = 0;
@@ -21,11 +21,9 @@ TapeSensor ts(PA7, PA6, 150);
 #define ERROR_ONE_OFF 2 // mm
 #define ERROR_BOTH_OFF 10 // mm
 
-Motor::DCMotor motorL(PB_1, PB_0, 900);
+Motor::DCMotor motorL(PB_9, PB_8, 900);
 Motor::DCMotor motorR(PA_1, PA_0, 900);
-#define MOTOR_BASE_SPEED 0.5
-
-unsigned int i = 0;
+#define MOTOR_BASE_SPEED 0.8
 
 void setupDisplay() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -114,8 +112,8 @@ void loop() {
   }
   double derivative = (error - lastError) / (now - lastPositionStartTime);
 
-  double p = kp / 1024.0 * error;
-  double d = kd / 100.0 * derivative;
+  double p = kp / 5000.0 * error;
+  double d = kd / 50.0 * derivative;
   double correction = gain / 1024.0 * (p + d);
 
   double lSpeed = MOTOR_BASE_SPEED - correction;
@@ -127,14 +125,9 @@ void loop() {
 
     printPDParameters(false, error, kp, kd, gain);
   } else {
-    if (i == 0) {
-      printPDCorrection(error, p, d, correction);
-    }
-
     motorL.setSpeed(constrain(lSpeed, -1, 1));
     motorR.setSpeed(constrain(rSpeed, -1, 1));
   }
 
   lastError = error;
-  i = (i + 1) % 20;
 }
